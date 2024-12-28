@@ -26,8 +26,8 @@ def wave2D_Dirichlet_example():
     graphics = MeshGraphics2D(fem2D)
     graphics.create_solution_video(
         video_name = 'WaveDirichletExample', 
-        plot_style = 'heatmap', 
-        crange     = (-.5, .5), 
-        cmap       = 'inferno', 
+        plot_style = 'surface', 
+        crange     = (-1, 1), 
+        cmap       = 'blues', 
         fps        = 20
     )
