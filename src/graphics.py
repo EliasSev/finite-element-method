@@ -13,20 +13,18 @@ class MeshGraphics:
         self._results_path = "./results/"
         self._n_images = None
 
-
-    def create_images(self):
+    def _create_images(self):
         """
         Save image in self._images_path, which will be used to generate a video
         using the create_video method
         """
-        raise NotImplementedError("'create_images' method is not implemented.")
+        raise NotImplementedError("'_create_images' method is not implemented.")
 
-
-    def create_video(self, vid_name, fps, video_format='mp4'):
+    def _create_video(self, video_name, fps, video_format='mp4'):
         """
         Create a video using the images in /images.
 
-        vid_name, str     : Name of video.
+        video_name, str   : Name of video.
         fps, int          : Frames per seconds used for video.
         video_format, str : Video format. 'mp4' or 'avi'.
         """
@@ -34,7 +32,7 @@ class MeshGraphics:
         print("Creating video\n" + '-'*40)
 
         if self._n_images is None:
-            raise AttributeError("Number of images not defined. Try creating the images with 'create_images'.")
+            raise AttributeError("Number of images not defined")
         
         fformat = {'mp4': 'mp4v', 'avi': 'XVID'}
         if video_format not in fformat.keys():
@@ -42,7 +40,7 @@ class MeshGraphics:
 
         # create names
         images = [f"img{i}.jpg" for i in range(self._n_images)]
-        output_video = self._results_path + vid_name + '.' + video_format
+        output_video = self._results_path + video_name + '.' + video_format
 
         # define video dimension
         first_image = cv2.imread(self._images_path + images[0])
@@ -78,8 +76,7 @@ class MeshGraphics1D(MeshGraphics):
         self.xlim = (self.X[0], self.X[-1])
         self.ylim = (min(self.solution), max(self.solution))
 
-
-    def create_images(self, solution, i):
+    def _create_images(self, solution, i):
 
         print("Creating image\n" + '-'*40)
 
@@ -96,22 +93,33 @@ class MeshGraphics1D(MeshGraphics):
     
 
 class MeshGraphics2D(MeshGraphics):
-    def __init__(self, fem2D, cmap) -> None:
+    def __init__(self, fem2D) -> None:
         """
         fem2D, Fem2D : Instance of Fem2D class.
-        cmap, str    : Matplotlib color map.
         """
 
         super().__init__()
         self.P = fem2D.mesh.P
         self.C = fem2D.mesh.C
         self.solution = fem2D.solution
-        self.cmap = cmap
         self.n_nodes = len(self.P)
-        self.plot_functions = {"heatmap": self.plot_2D, 'surface': self.plot_3D}
+        self.plot_functions = {"heatmap": self._plot_2D, 'surface': self._plot_3D}
 
-    
-    def create_solution_image(self, name, figsize=(7,7)):
+    def create_solution_video(self, video_name, plot_style, crange, cmap='viridis', fps=15, video_format='mp4'):
+        """
+        Create a video using the images in /images.
+
+        vid_name, str     : Name of video.
+        plot_style, str   : Plot style for images. Surface or heat.
+        fps, int          : Frames per seconds used for video.
+        video_format, str : Video format. 'mp4' or 'avi'.
+        crange, tuple     : Fixed value range used for coloring.
+        """
+
+        self._create_images(plot_style, crange, cmap)
+        self._create_video(video_name, fps, video_format)
+
+    def create_solution_image(self, name, cmap='viridis', figsize=(7,7)):
 
         print("Creating image\n" + '-'*40)
 
@@ -120,7 +128,7 @@ class MeshGraphics2D(MeshGraphics):
         output_image = self._results_path + name + '.png'
         
         fig, ax = plt.subplots(figsize=figsize, constrained_layout=True)
-        heatmap_num = ax.tripcolor(triang, self.solution, cmap=self.cmap)
+        heatmap_num = ax.tripcolor(triang, self.solution, cmap=cmap)
         ax.set_title("Numerical solution $u_h$")
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -131,7 +139,6 @@ class MeshGraphics2D(MeshGraphics):
         plt.close()
 
         print(f"Image saved as: {output_image}")
-    
 
     def triangulation_plot(self, show_labels=False, figsize=(7,7), marker='o'):
         """
@@ -166,24 +173,23 @@ class MeshGraphics2D(MeshGraphics):
                          fontsize = 12,
                          ha = 'center',
                          va = 'center',
-                         color = 'blue') 
-                
+                         color = 'blue')           
     
-    def plot_2D(self, solution, vrange, i):
+    def _plot_2D(self, solution, crange, i, cmap):
         """
         Create a heat map of the solution on a mesh.
 
         solution, np.array : Finite element solution.
-        vrange, tuple      : Fixed value range used for coloring.
+        crange, tuple      : Fixed value range used for coloring.
         i, int             : Image index used for naming.
         """
 
         x, y = self.P[:, 0], self.P[:, 1]
-        vmin, vmax = vrange
+        vmin, vmax = crange
         triang = mpl.tri.Triangulation(x, y, self.C)
 
         fig, ax = plt.subplots(1, 1, figsize=(8, 8), constrained_layout=True)
-        heatmap_num = ax.tripcolor(triang, solution, cmap=self.cmap, vmin=vmin, vmax=vmax)
+        heatmap_num = ax.tripcolor(triang, solution, cmap=cmap, vmin=vmin, vmax=vmax)
         ax.set_title(f"Numerical solution $u_h$, $n_p$={self.n_nodes}x{self.n_nodes}")
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
@@ -194,41 +200,40 @@ class MeshGraphics2D(MeshGraphics):
         
         plt.savefig(self._images_path + f"img{i}.jpg")
         plt.close()
-
     
-    def plot_3D(self, solution, vrange, i):
+    def _plot_3D(self, solution, crange, i, cmap):
         """
         Create a surface plot the solution on a mesh.
 
         solution, np.array : Finite element solution.
-        vrange, tuple      : Fixed value range used for coloring.
+        crange, tuple      : Fixed value range used for coloring.
         i, int             : Image index used for naming.
         """
 
         x, y = self.P[:, 0], self.P[:, 1]
-        vmin, vmax = vrange
+        vmin, vmax = crange
 
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_trisurf(x, y, solution, triangles=self.C, cmap=self.cmap, edgecolor='none', vmin=vmin, vmax=vmax)
+        ax.plot_trisurf(x, y, solution, triangles=self.C, cmap=cmap, edgecolor='none', vmin=vmin, vmax=vmax)
         ax.set_title(f"Numerical solution $u_h$, $n_p$={self.n_nodes}x{self.n_nodes}")
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
         
-        if vrange:
-            zrange = tuple(v*1.5 for v in vrange)
+        if crange:
+            zrange = tuple(v*1.5 for v in crange)
             ax.set_zlim(zrange)
 
         plt.savefig(self._images_path + f"img{i}.jpg")
         plt.close()
-
     
-    def create_images(self, plot_style, vrange):
+    def _create_images(self, plot_style, crange, cmap):
         """
         Generate images for all time steps in self.solutions. Images used to generate a video.
 
         plot_style, str : Plot style for images. Surface or heat.
-        vrange, tuple   : Fixed value range used for coloring.
+        crange, tuple   : Fixed value range used for coloring.
+        cmap, str       : Color map.
         """
 
         print("Creating images\n" + '-'*40)
@@ -237,7 +242,7 @@ class MeshGraphics2D(MeshGraphics):
         if plot_style not in available_styles:
             raise ValueError(f"Unknown plotting style: \"{plot_style}\". Available styles: {available_styles}")
 
-        m = len(self.solution) - 1
+        m = len(self.solution)
         plot_func = self.plot_functions[plot_style]
         
         for i, solution_i in enumerate(self.solution):
@@ -250,7 +255,7 @@ class MeshGraphics2D(MeshGraphics):
             image_created = False
             while not image_created:
                 try:
-                    plot_func(solution_i, vrange, i)
+                    plot_func(solution_i, crange, i, cmap)
                     image_created = True
                 except Exception as e:
                     if isinstance(e, ValueError) and str(e) == "PyCapsule_New called with null pointer":
@@ -264,7 +269,7 @@ class MeshGraphics2D(MeshGraphics):
                         # any other exception
                         raise e
                     
-            progress_bar(i + 1, m + 1)
+            progress_bar(i + 1, m)
         print('\n')
 
         # give value once all images are created
