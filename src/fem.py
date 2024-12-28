@@ -152,7 +152,7 @@ class Fem2D(Fem):
         return, array : Solutions of each time step, size (m+1, n)
         """
 
-        print("Backward Euler heat solver (Dirichlet)\n" + '-'*40)
+        print("Backward Euler heat solver (Dirichlet, 2D)\n" + '-'*40)
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
         
@@ -205,7 +205,7 @@ class Fem2D(Fem):
         return, array : Solutions of each time step, size (m+1, n)
         """
 
-        print("Backward Euler heat solver (Neumann)\n" + '-'*40)
+        print("Backward Euler heat solver (Neumann, 2D)\n" + '-'*40)
         
         # time step size
         k = T / m
@@ -246,7 +246,7 @@ class Fem2D(Fem):
         dnodes, tuple : Index of Dirichlet nodes (triangle index).
         """
         
-        print(f"Crank-Nicolson wave solver\n" + '-'*40)
+        print(f"Crank-Nicolson wave solver (Dirichlet, 2D)\n" + '-'*40)
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
         dnodes = np.array(dnodes)
@@ -295,7 +295,7 @@ class Fem2D(Fem):
         gD, func : Boundary function gD = gD(x, y)
         """
         
-        print(f"Poisson solver (Dirichlet)\n" + '-'*40)
+        print(f"Poisson solver (Dirichlet, 2D)\n" + '-'*40)
         
         # get indicies of interior nodes
         int_idxs = np.ix_(self._interior_nodes, self._interior_nodes)  # (K^T, K)
@@ -395,7 +395,6 @@ class Fem1D(Fem):
         Finite element method with backward Euler for the 1D heat equation
         with 0 on the boundary.
 
-        x, array : discretization I0, ..., In of I
         m, int   : number of intervals in time, J1, ..., Jm
         T, float : stopping time, J = (0, T]
         f, func  : function f = f(x)
@@ -404,7 +403,7 @@ class Fem1D(Fem):
         Returns m+1 xi's as an array Xi of size (m+1, n+1)
         """
 
-        print(f"Poisson solver (Dirichlet)\n" + '-'*40)
+        print(f"Poisson solver (Dirichlet, 1D)\n" + '-'*40)
 
         # n+1 space points and m+1 time points
         n = len(self.X) - 1
@@ -422,8 +421,12 @@ class Fem1D(Fem):
             kl = t[l+1] - t[l]
             xi = np.linalg.solve(M + kl * A, M @ xi + kl * b)
             xi_record.append(xi)
+
+            progress_bar(l + 2, m + 1)
+        print('\n')
             
         # add boundaries
         Xi = np.zeros((m+1, n+1))
         Xi[:, 1:-1] = np.array(xi_record)
+        self._solution = Xi
         return Xi
