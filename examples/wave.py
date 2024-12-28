@@ -28,6 +28,6 @@ def wave2D_Dirichlet_example():
         video_name = 'WaveDirichletExample', 
         plot_style = 'surface', 
         crange     = (-1, 1), 
-        cmap       = 'blues', 
+        cmap       = 'Blues', 
         fps        = 20
     )
