@@ -274,12 +274,12 @@ class MeshGraphics2D(MeshGraphics):
         plot_func = self.plot_functions[plot_style]
         
         for i, solution_i in enumerate(self.solution):
-            # try to create image 3 times in case of matplotlib bug
+            # try to create image 'max_attempts' times in case of matplotlib bug
             # ValueError: PyCapsule_New called with null pointer, which comes from
             # GetForegroundWindow() returning NULL. This can be avioded by waiting a bit (~0.1s) 
             # and retrying (bug fixed in matplotlib 3.10, https://github.com/matplotlib/matplotlib/pull/28269)
             attempts = 0
-            max_attempts = 5
+            max_attempts = 15
             image_created = False
             while not image_created:
                 try:
