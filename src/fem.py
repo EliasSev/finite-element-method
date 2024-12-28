@@ -1,6 +1,8 @@
 import numpy as np
 import scipy as sp
 from scipy import sparse
+from numpy.typing import NDArray
+from collections.abc import Callable
 from .graphics import progress_bar
 
 
@@ -8,9 +10,8 @@ class Fem:
     def __init__(self) -> None:
         self._solution = None
 
-
     @property
-    def solution(self):
+    def solution(self) -> None:
         if self._solution is None:
             raise AttributeError("Solution not generated yet. Use a solver to generate a solution")
         return self._solution
@@ -31,9 +32,8 @@ class Fem2D(Fem):
         self.C = mesh.C
         self._boundary_nodes = mesh.boundary_nodes
         self._interior_nodes = mesh.interior_nodes
-    
 
-    def _triangle_area(self, x, y):
+    def _triangle_area(self, x: NDArray, y: NDArray) -> float:
         """
         Get the area of a single triangle element.
         
@@ -48,8 +48,7 @@ class Fem2D(Fem):
             raise ValueError("Invalid area:", area)
         return area
 
-
-    def _hat_grad(self, x, y):
+    def _hat_grad(self, x: NDArray, y: NDArray) -> tuple:
         """
         Get the area and gradients of the 3 hat functions
         which are located on the 3 nodes of a single triangle.
@@ -66,9 +65,8 @@ class Fem2D(Fem):
         b = b / (2 * area)
         c = c / (2 * area)
         return area, b, c
-    
 
-    def stiffness_assembler_2D(self): 
+    def stiffness_assembler_2D(self) -> NDArray: 
         """
         Assemble the stiffness matrix.
         
@@ -89,9 +87,8 @@ class Fem2D(Fem):
             A[loc2glb] += AK
             
         return A
-    
 
-    def mass_assembler_2D(self):
+    def mass_assembler_2D(self) -> NDArray:
         """
         Assemble the mass matrix.
 
@@ -112,9 +109,8 @@ class Fem2D(Fem):
             M[loc2glb] += MK
             
         return M
-    
 
-    def load_assembler_2D(self, f):
+    def load_assembler_2D(self, f: Callable[[float, float], float]):
         """
         Assemble the load vector.
 
@@ -137,9 +133,14 @@ class Fem2D(Fem):
             b[loc2glb] += bK
             
         return b 
-    
 
-    def heat_solver_Dirichlet(self, T, m, f, u0):
+    def heat_solver_Dirichlet(
+            self, 
+            T: float, 
+            m: int, 
+            f: Callable[[float, float], float], 
+            u0: Callable[[float, float], float]
+            ) -> NDArray:
         """
         Solver for the 2D heat equation ut - (uxx + uyy) = f using finite elements
         for space and backward-Euler for time with Dirichlet boundary condition.
@@ -153,6 +154,7 @@ class Fem2D(Fem):
         """
 
         print("Backward Euler heat solver (Dirichlet, 2D)\n" + '-'*40)
+
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
         
@@ -190,9 +192,14 @@ class Fem2D(Fem):
         
         self._solution = Xi
         return Xi
-    
 
-    def heat_solver_Neumann(self, T, m, f, u0):
+    def heat_solver_Neumann(
+            self, 
+            T: float, 
+            m: int, 
+            f: Callable[[float, float], float], 
+            u0: Callable[[float, float], float]
+            ) -> NDArray:
         """
         Solver for the 2D heat equation ut - (uxx + uyy) = f using finite elements
         for space and backward-Euler for time with Neumann boundary condition.
@@ -231,9 +238,16 @@ class Fem2D(Fem):
         Xi = np.array(xi_record)
         self._solution = Xi
         return Xi
-    
 
-    def wave_solver_Dirichlet(self, T, m, c, f, gD, dnodes):
+    def wave_solver_Dirichlet(
+            self, 
+            T: float, 
+            m: int, 
+            c: float, 
+            f: Callable[[float, float], float], 
+            gD: Callable[[float, int], float], 
+            dnodes: tuple
+            ) -> NDArray:
         """
         Solve the 2-dimensional wave equation utt + c^2 uyy = f(x, y) with 0 on the boundary
         using the finite elements for space and the Crank-Nicolson method for time.
@@ -241,8 +255,8 @@ class Fem2D(Fem):
         T, float      : Stopping time
         m, int        : Number of time intervals
         c, int        : Wave speed
-        f, func       : Function f = f(x, y)
-        gD, func      : Boundary condition at Dirichlet boundary nodes, gD(dt, timestep).
+        f, func       : Function f(x: float, y: float) -> float
+        gD, func      : Boundary condition at Dirichlet boundary nodes, gD(dt: float, timestep: int) -> float.
         dnodes, tuple : Index of Dirichlet nodes (triangle index).
         """
         
@@ -277,7 +291,6 @@ class Fem2D(Fem):
             xi_record.append(xi)
             
             # print progress
-            #if not l % (m // 10) or l == (m-1):
             progress_bar(l + 2, m + 1)
         print('\n')
         
@@ -285,8 +298,11 @@ class Fem2D(Fem):
         self._solution = Xi
         return Xi
 
-
-    def Poisson_solver_Dirichlet(self, f, gD):
+    def Poisson_solver_Dirichlet(
+            self, 
+            f: Callable[[float, float], float], 
+            gD: Callable[[float, float], float],
+            ) -> NDArray:
         """
         Solve the 2-dimensional Poisson equation u_xx + u_yy = f(x, y) with
         gD(x, y) on the boundary.
@@ -319,17 +335,17 @@ class Fem2D(Fem):
         
         progress_bar(1, 1)
         print('\n')
+
         self._solution = xi
         return xi
     
 
 class Fem1D(Fem):
-    def __init__(self, X):
+    def __init__(self, X: NDArray) -> None:
         super().__init__()
         self.X = X
-    
 
-    def stiffness_assembler_1D(self):
+    def stiffness_assembler_1D(self) -> NDArray:
         """
         Assemble the (n+1)x(n+1) stiffness matrix A.
 
@@ -348,8 +364,7 @@ class Fem1D(Fem):
             
         return A
 
-
-    def mass_assembler_1D(self):
+    def mass_assembler_1D(self) -> NDArray:
         """
         Assemble the (n+1)x(n01) mass matrix M using Simpsons rule.
 
@@ -368,8 +383,7 @@ class Fem1D(Fem):
             
         return M
 
-
-    def load_assembler_1D(self, f):
+    def load_assembler_1D(self, f: Callable[[float], float]) -> NDArray:
         """
         Assemble the (n+1)x(1) load vector b using the trapezoidal rule.
 
@@ -389,8 +403,13 @@ class Fem1D(Fem):
             
         return b
 
-
-    def heat_solver_Dirichlet(self, m, T, f, u0):
+    def heat_solver_Dirichlet(
+            self, 
+            m: int, 
+            T: float, 
+            f: Callable[[float], float], 
+            u0: Callable[[float], float]
+            ) -> NDArray:
         """
         Finite element method with backward Euler for the 1D heat equation
         with 0 on the boundary.
