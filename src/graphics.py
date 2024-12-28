@@ -1,26 +1,28 @@
+import cv2
+import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import cv2
 from time import sleep
+from numpy.typing import NDArray
 
 
 class MeshGraphics:
     """
     Mesh graphics parent class
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self._images_path = "./images/"
         self._results_path = "./results/"
         self._n_images = None
 
-    def _create_images(self):
+    def _create_images(self) -> None:
         """
         Save image in self._images_path, which will be used to generate a video
         using the create_video method
         """
         raise NotImplementedError("'_create_images' method is not implemented.")
 
-    def _create_video(self, video_name, fps, video_format='mp4'):
+    def _create_video(self, video_name: str, fps: int, video_format: str='mp4') -> None:
         """
         Create a video using the images in /images.
 
@@ -62,33 +64,52 @@ class MeshGraphics:
 
 
 class MeshGraphics1D(MeshGraphics):
-    def __init__(self, fem1D, color, figsize=(9, 4)) -> None:
-        """
-        fem2D, Fem2D : Instance of Fem2D class.
-        color, str    : Matplotlib color for line.
-        """
-
+    def __init__(self, fem1D) -> None:
         super().__init__()
         self.X = fem1D.X
         self.solution = fem1D.solution
-        self.color = color
-        self.figsize = figsize
+
+        # plotting params
+        self.figsize = (9, 4)
         self.xlim = (self.X[0], self.X[-1])
-        self.ylim = (min(self.solution), max(self.solution))
+        self.ylim = (np.min(self.solution), np.max(self.solution))
 
-    def _create_images(self, solution, i):
+    def create_solution_video(self, video_name: str, color: str, fps: int=15, video_format: str='mp4') -> None:
+        """
+        Create a video using the images in /images.
 
-        print("Creating image\n" + '-'*40)
+        vid_name, str     : Name of video.
+        fps, int          : Frames per seconds used for video.
+        video_format, str : Video format. 'mp4' or 'avi'.
+        """
 
+        self._create_images(color)
+        self._create_video(video_name, fps, video_format)
+
+    def _create_images(self, color: str) -> None:
+
+        print("Creating images\n" + '-'*40)
+
+        m = len(self.solution)
+        for i, solution_i in enumerate(self.solution):
+            name = f"/img{i}.jpg"
+            self._create_image(solution_i, name, color)
+
+            progress_bar(i + 1, m)
+        print('\n')
+
+        self._n_images = len(self.solution)
+
+    def _create_image(self, solution: NDArray, name: str, color: str) -> None:
         # figure setup
         fig, ax = plt.subplots(figsize=self.figsize)
         ax.set_xlim(self.xlim[0], self.xlim[1])
         ax.set_ylim(self.ylim[0], self.ylim[1])
-        ax.plot(self.X, solution, self.color)
+        ax.plot(self.X, solution, color)
         ax.set_title("1D heat equation using backward Euler")
         ax.set_label(f"t = ")
-        plt.legend()
-        plt.savefig(self._images_path + f"/img{i}.jpg")
+        #plt.legend()
+        plt.savefig(self._images_path + name)
         plt.close()
     
 
@@ -105,7 +126,7 @@ class MeshGraphics2D(MeshGraphics):
         self.n_nodes = len(self.P)
         self.plot_functions = {"heatmap": self._plot_2D, 'surface': self._plot_3D}
 
-    def create_solution_video(self, video_name, plot_style, crange, cmap='viridis', fps=15, video_format='mp4'):
+    def create_solution_video(self, video_name: str, plot_style: str, crange: tuple, cmap: str='viridis', fps: int=15, video_format: str='mp4') -> None:
         """
         Create a video using the images in /images.
 
@@ -119,7 +140,14 @@ class MeshGraphics2D(MeshGraphics):
         self._create_images(plot_style, crange, cmap)
         self._create_video(video_name, fps, video_format)
 
-    def create_solution_image(self, name, cmap='viridis', figsize=(7,7)):
+    def create_solution_image(self, name: str, cmap: str='viridis', figsize: tuple=(7,7)) -> None:
+        """
+        Create an image from self.solution.
+
+        name, str      : Image name.
+        cmap, str      : Color map.
+        figsize, tuple : Image size.
+        """
 
         print("Creating image\n" + '-'*40)
 
@@ -140,7 +168,7 @@ class MeshGraphics2D(MeshGraphics):
 
         print(f"Image saved as: {output_image}")
 
-    def triangulation_plot(self, show_labels=False, figsize=(7,7), marker='o'):
+    def triangulation_plot(self, show_labels: bool=False, figsize: tuple=(7,7), marker: str='o') -> None:
         """
         Create a plot of the mesh.
 
@@ -175,7 +203,7 @@ class MeshGraphics2D(MeshGraphics):
                          va = 'center',
                          color = 'blue')           
     
-    def _plot_2D(self, solution, crange, i, cmap):
+    def _plot_2D(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
         """
         Create a heat map of the solution on a mesh.
 
@@ -201,7 +229,7 @@ class MeshGraphics2D(MeshGraphics):
         plt.savefig(self._images_path + f"img{i}.jpg")
         plt.close()
     
-    def _plot_3D(self, solution, crange, i, cmap):
+    def _plot_3D(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
         """
         Create a surface plot the solution on a mesh.
 
@@ -227,7 +255,7 @@ class MeshGraphics2D(MeshGraphics):
         plt.savefig(self._images_path + f"img{i}.jpg")
         plt.close()
     
-    def _create_images(self, plot_style, crange, cmap):
+    def _create_images(self, plot_style: str, crange: tuple, cmap: str) -> None:
         """
         Generate images for all time steps in self.solutions. Images used to generate a video.
 
@@ -276,7 +304,7 @@ class MeshGraphics2D(MeshGraphics):
         self._n_images = len(self.solution)
 
 
-def progress_bar(step, total_steps, bar_length=30):
+def progress_bar(step: int, total_steps: int, bar_length: int=30) -> None:
     """
     Simple progress bar.
 
