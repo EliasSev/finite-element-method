@@ -4,33 +4,30 @@ from src.fem import Fem2D
 from src.graphics import MeshGraphics2D
 
 def wave2D_Dirichlet_example():
-    # FEM params
-    n = 75  # n x n square mesh
-    x_range = (0, 1)  # mesh x-range
-    y_range = (0, 1)  # mesh y-range
-    f  = lambda x, y: 0
-    gD = lambda k, l: np.sin(8 * np.pi * k * l)  # dt=k, timstep=l
-    Dirichlet_nodes = tuple(range(8))
-    c = 0.75  # wave speed
-    T = 2     # stop time
-    m = 199   # time intervals
-
-    # video params
-    cmap = 'inferno'
-    plot_style = 'heatmap'
-    vid_name = 'WaveExample'
-    fps = 30
-
     # create mesh
     mesh = Mesh()
-    mesh.square_mesh(n, x_range, y_range)
+    mesh.square_mesh(
+        n = 75,           # n by n grid
+        x_range = (0, 1), # x-limit
+        y_range = (0, 1)  # y-limit
+    )
 
-    # solve
+    # fem solver
     fem2D = Fem2D(mesh)
-    fem2D.wave_solver_Dirichlet(T, m, c, f, gD, Dirichlet_nodes)
+    fem2D.wave_solver_Dirichlet(
+        T  = 2,               # stopping time
+        m  = 199,             # time intervals
+        c  = .75,             # wave speed
+        f  = lambda x, y: 0,  # source function
+        gD = lambda k, l: np.sin(8 * np.pi * k * l), # Dirichlet condition (dt=k, timstep=l)
+        dnodes = tuple(range(8))  # Dirichlet nodes
+    )
 
-    # create video
-    vrange = (-.5, .5)
-    graphics = MeshGraphics2D(fem2D, cmap)
-    graphics.create_images(plot_style, vrange)
-    graphics.create_video(vid_name, fps)
+    graphics = MeshGraphics2D(fem2D)
+    graphics.create_solution_video(
+        video_name = 'WaveDirichletExample', 
+        plot_style = 'heatmap', 
+        crange     = (-.5, .5), 
+        cmap       = 'inferno', 
+        fps        = 20
+    )

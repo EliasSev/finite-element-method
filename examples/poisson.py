@@ -5,22 +5,20 @@ from src.graphics import MeshGraphics2D
 
 
 def poisson2D_Dirichlet_example():
-    # FEM params
-    mesh_path = "mesh_files/donut.msh"
-    f = lambda x, y: 2 * np.pi**2 * np.sin(0.25 * np.pi * x) * np.sin(0.25 * np.pi * y)
-    gD = lambda x, y: 0
-
-    # image params
-    cmap = 'viridis'
-    picture_name = 'PoissonExample'
-
-    # create triangulation mesh
+    # create mesh
     mesh = Mesh()
-    mesh.read_msh(mesh_path)
+    mesh.read_msh(path = "mesh_files/donut.msh")
 
-    # FEM
+    # fem solver
     fem2D = Fem2D(mesh)
-    fem2D.Poisson_solver_Dirichlet(f, gD)
+    fem2D.Poisson_solver_Dirichlet(
+        f  = lambda x, y: 2 * np.pi**2 * np.sin(0.25 * np.pi * x) * np.sin(0.25 * np.pi * y),
+        gD = lambda x, y: 0
+    )
 
-    graphics = MeshGraphics2D(fem2D, cmap)
-    graphics.create_solution_image(picture_name)
+    # create image
+    graphics = MeshGraphics2D(fem2D)
+    graphics.create_solution_image(
+        name = 'PoissonDirichletExample', 
+        cmap = 'viridis'
+    )
