@@ -6,6 +6,10 @@ are supported so far
 - the wave equation in 2D
 
 ## How to use
+Download the required packages by using the following command in cmd (in the finite-element-method path):
+```bash
+pip install -r requirements.txt
+```
 Define a mesh with the `Mesh` class:
 
 ```python
