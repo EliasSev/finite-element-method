@@ -1,7 +1,7 @@
 import numpy as np
 from src.mesh import Mesh
-from src.fem import Fem2D
-from src.graphics import MeshGraphics2D
+from src.fem import Fem1D, Fem2D
+from src.graphics import MeshGraphics1D, MeshGraphics2D
 
 
 def heat2D_Neumann_example():
@@ -53,3 +53,24 @@ def heat2D_Dirichlet_example():
         fps        = 20
     )
 
+def heat1D_Dirichlet_example():
+    # create grid
+    X = np.linspace(-1, 1, 100)
+
+    # fem solver
+    fem1D = Fem1D(X)
+    fem1D.heat_solver_Dirichlet(
+        m  = 500,
+        T  = 1,
+        f  = lambda x: x**2,
+        u0 = lambda x: np.heaviside(x, 0)
+    )
+
+    # generate video
+    graphics = MeshGraphics1D(fem1D)
+    graphics.create_solution_video(
+        video_name = 'HeatDirichletExample1D',
+        color = 'red',
+        fps = 15
+    )
+    
