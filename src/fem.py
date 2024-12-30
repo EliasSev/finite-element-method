@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from time import time
 from scipy import sparse
 from numpy.typing import NDArray
 from collections.abc import Callable
@@ -9,7 +10,7 @@ from .graphics import progress_bar
 class Fem:
     def __init__(self) -> None:
         self._solution = None
-        self._horizontal_line = '-' * 45
+        self._horizontal_line = '-' * 47
 
     @property
     def solution(self) -> None:
@@ -155,6 +156,7 @@ class Fem2D(Fem):
         """
 
         print("Backward Euler heat solver (Dirichlet, 2D)\n" + self._horizontal_line)
+        t0 = time()
 
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
@@ -180,8 +182,7 @@ class Fem2D(Fem):
             xi_record.append(xi)
             
             # print progress
-            #if not l % (m // 10) or l == (m - 1):
-            progress_bar(l + 2, m + 1)
+            progress_bar(l + 2, m + 1, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
 
         # add boundary
@@ -214,6 +215,7 @@ class Fem2D(Fem):
         """
 
         print("Backward Euler heat solver (Neumann, 2D)\n" + self._horizontal_line)
+        t0 = time()
         
         # time step size
         k = T / m
@@ -233,7 +235,7 @@ class Fem2D(Fem):
             xi_record.append(xi)
 
             # progress
-            progress_bar(l + 2, m + 1)
+            progress_bar(l + 2, m + 1, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
 
         Xi = np.array(xi_record)
@@ -262,6 +264,8 @@ class Fem2D(Fem):
         """
         
         print(f"Crank-Nicolson wave solver (Dirichlet, 2D)\n" + self._horizontal_line)
+        t0 = time()
+
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
         dnodes = np.array(dnodes)
@@ -292,7 +296,7 @@ class Fem2D(Fem):
             xi_record.append(xi)
             
             # print progress
-            progress_bar(l + 2, m + 1)
+            progress_bar(l + 2, m + 1, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
         
         Xi = np.array(xi_record)
@@ -313,6 +317,7 @@ class Fem2D(Fem):
         """
         
         print(f"Poisson solver (Dirichlet, 2D)\n" + self._horizontal_line)
+        t0 = time()
         
         # get indicies of interior nodes
         int_idxs = np.ix_(self._interior_nodes, self._interior_nodes)  # (K^T, K)
@@ -334,7 +339,7 @@ class Fem2D(Fem):
         xi[self._interior_nodes] = xi0  # add interior values             
         xi[self._boundary_nodes] = xig  # add edge values
         
-        progress_bar(1, 1)
+        progress_bar(1, 1, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
 
         self._solution = xi
@@ -424,6 +429,7 @@ class Fem1D(Fem):
         """
 
         print(f"Poisson solver (Dirichlet, 1D)\n" + self._horizontal_line)
+        t0 = time()
 
         # n+1 space points and m+1 time points
         n = len(self.X) - 1
@@ -442,7 +448,7 @@ class Fem1D(Fem):
             xi = np.linalg.solve(M + kl * A, M @ xi + kl * b)
             xi_record.append(xi)
 
-            progress_bar(l + 2, m + 1)
+            progress_bar(l + 2, m + 1, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
             
         # add boundaries

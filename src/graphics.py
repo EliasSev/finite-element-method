@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from time import sleep
+from time import time, sleep
 from numpy.typing import NDArray
 
 
@@ -14,7 +14,7 @@ class MeshGraphics:
         self._images_path = "./images/"
         self._results_path = "./results/"
         self._n_images = None
-        self._horizontal_line = '-' * 45
+        self._horizontal_line = '-' * 47
 
     def _create_images(self) -> None:
         """
@@ -62,6 +62,7 @@ class MeshGraphics:
         print(f"Duration       : {self._n_images/fps:.1f}s")
         print(f"Resolution     : {height} x {width}")
         print(f"Video saved as : {output_video}")
+        print()
 
 
 class MeshGraphics1D(MeshGraphics):
@@ -90,13 +91,14 @@ class MeshGraphics1D(MeshGraphics):
     def _create_images(self, color: str) -> None:
 
         print("Creating images\n" + self._horizontal_line)
+        t0 = time()
 
         m = len(self.solution)
         for i, solution_i in enumerate(self.solution):
             name = f"/img{i}.jpg"
             self._create_image(solution_i, name, color)
 
-            progress_bar(i + 1, m)
+            progress_bar(i + 1, m, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
 
         self._n_images = len(self.solution)
@@ -284,6 +286,7 @@ class MeshGraphics2D(MeshGraphics):
         """
 
         print("Creating images\n" + self._horizontal_line)
+        t0 = time()
 
         available_styles = self.plot_functions.keys()
         if plot_style not in available_styles:
@@ -316,21 +319,28 @@ class MeshGraphics2D(MeshGraphics):
                         # any other exception
                         raise e
                     
-            progress_bar(i + 1, m)
+            progress_bar(i + 1, m, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
 
         # give value once all images are created
         self._n_images = len(self.solution)
 
 
-def progress_bar(step: int, total_steps: int, bar_length: int=30) -> None:
+def progress_bar(
+        step: int, 
+        total_steps: int, 
+        bar_length: int = 30,
+        end_text: str = ' test'
+        ) -> None:
     """
     Simple progress bar.
 
     step, int        : current step of process
     total_steps, int : total number of steps in progress
     bar_length, int  : length of bar
+    end_text, str    : add additional text at the end of the bar
     """
     
     filled = int(bar_length * step / total_steps)
-    print(f"[{filled * '#' :<{bar_length}}] {step}/{total_steps}", end='\r')
+    text = f"[{filled * '#' :<{bar_length}}] {step}/{total_steps}"
+    print(text + end_text, end='\r')
