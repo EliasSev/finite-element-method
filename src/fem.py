@@ -286,7 +286,7 @@ class Fem2D(Fem):
         B_right = sparse.bmat([[M,           M*k/2],
                                [-A*c**2*k/2, M    ]], format='csc')
         
-         # precondition
+        # precondition
         ilu = sparse.linalg.spilu(B_left, drop_tol=drop_tol)  # appoximate inverse
         precond = sparse.linalg.LinearOperator(B_left.shape, ilu.solve)
 
