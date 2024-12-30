@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 class MeshGraphics:
     """
-    Mesh graphics parent class
+    Mesh graphics parent class.
     """
     def __init__(self) -> None:
         self._images_path = "./images/"
@@ -126,7 +126,15 @@ class MeshGraphics2D(MeshGraphics):
         self.n_nodes = len(self.P)
         self.plot_functions = {"heatmap": self._plot_2D, 'surface': self._plot_3D}
 
-    def create_solution_video(self, video_name: str, plot_style: str, crange: tuple, cmap: str='viridis', fps: int=15, video_format: str='mp4') -> None:
+    def create_solution_video(
+            self, 
+            video_name: str, 
+            plot_style: str, 
+            crange: tuple, 
+            cmap: str='viridis', 
+            fps: int=15, 
+            video_format: str='mp4'
+            ) -> None:
         """
         Create a video using the images in /images.
 
@@ -140,7 +148,12 @@ class MeshGraphics2D(MeshGraphics):
         self._create_images(plot_style, crange, cmap)
         self._create_video(video_name, fps, video_format)
 
-    def create_solution_image(self, name: str, cmap: str='viridis', figsize: tuple=(7,7)) -> None:
+    def create_solution_image(
+            self, 
+            name: str, 
+            cmap: str = 'viridis', 
+            figsize: tuple = (7, 7)
+            ) -> None:
         """
         Create an image from self.solution.
 
@@ -168,7 +181,12 @@ class MeshGraphics2D(MeshGraphics):
 
         print(f"Image saved as: {output_image}")
 
-    def triangulation_plot(self, show_labels: bool=False, figsize: tuple=(7,7), marker: str='o') -> None:
+    def triangulation_plot(
+            self, 
+            show_labels: bool = False, 
+            figsize: tuple = (7, 7), 
+            marker: str = 'o'
+            ) -> None:
         """
         Create a plot of the mesh.
 
