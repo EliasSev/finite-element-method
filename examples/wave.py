@@ -7,7 +7,7 @@ def wave2D_Dirichlet_example():
     # create mesh
     mesh = Mesh()
     mesh.square_mesh(
-        n = 75,           # n by n grid
+        n = 150,           # n by n grid
         x_range = (0, 1), # x-limit
         y_range = (0, 1)  # y-limit
     )
@@ -25,9 +25,10 @@ def wave2D_Dirichlet_example():
 
     graphics = MeshGraphics2D(fem2D)
     graphics.create_solution_video(
+        title = 'Wave equation FEM solution',
         video_name = 'WaveDirichletExample', 
-        plot_style = 'surface', 
-        crange     = (-1, 1), 
-        cmap       = 'Blues', 
+        style = 'heatmap', 
+        crange     = (-0.3, 0.3), 
+        cmap       = 'viridis', 
         fps        = 20
     )

@@ -21,8 +21,9 @@ def heat2D_Neumann_example():
     # generate video
     graphics = MeshGraphics2D(fem2D)
     graphics.create_solution_video(
+        title      = 'Heat equation FEM solution',
         video_name = 'HeatNeumannExample', 
-        plot_style = 'surface', 
+        style = 'surface', 
         crange     = (0, 1), 
         cmap       = 'coolwarm', 
         fps        = 20
@@ -46,8 +47,9 @@ def heat2D_Dirichlet_example():
     # generate video
     graphics = MeshGraphics2D(fem2D)
     graphics.create_solution_video(
+        title      = 'Heat equation FEM solution',
         video_name = 'HeatDirichletExample', 
-        plot_style = 'surface', 
+        style = 'surface', 
         crange     = (0, 1), 
         cmap       = 'coolwarm', 
         fps        = 20
