@@ -14,6 +14,7 @@ class MeshGraphics:
         self._images_path = "./images/"
         self._results_path = "./results/"
         self._n_images = None
+        self._horizontal_line = '-' * 45
 
     def _create_images(self) -> None:
         """
@@ -31,7 +32,7 @@ class MeshGraphics:
         video_format, str : Video format. 'mp4' or 'avi'.
         """
         
-        print("Creating video\n" + '-'*40)
+        print("Creating video\n" + self._horizontal_line)
 
         if self._n_images is None:
             raise AttributeError("Number of images not defined")
@@ -88,7 +89,7 @@ class MeshGraphics1D(MeshGraphics):
 
     def _create_images(self, color: str) -> None:
 
-        print("Creating images\n" + '-'*40)
+        print("Creating images\n" + self._horizontal_line)
 
         m = len(self.solution)
         for i, solution_i in enumerate(self.solution):
@@ -162,7 +163,7 @@ class MeshGraphics2D(MeshGraphics):
         figsize, tuple : Image size.
         """
 
-        print("Creating image\n" + '-'*40)
+        print("Creating image\n" + self._horizontal_line)
 
         x, y = self.P[:, 0], self.P[:, 1]
         triang = mpl.tri.Triangulation(x, y, self.C)
@@ -282,7 +283,7 @@ class MeshGraphics2D(MeshGraphics):
         cmap, str       : Color map.
         """
 
-        print("Creating images\n" + '-'*40)
+        print("Creating images\n" + self._horizontal_line)
 
         available_styles = self.plot_functions.keys()
         if plot_style not in available_styles:

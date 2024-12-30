@@ -9,6 +9,7 @@ from .graphics import progress_bar
 class Fem:
     def __init__(self) -> None:
         self._solution = None
+        self._horizontal_line = '-' * 45
 
     @property
     def solution(self) -> None:
@@ -153,7 +154,7 @@ class Fem2D(Fem):
         return, array : Solutions of each time step, size (m+1, n)
         """
 
-        print("Backward Euler heat solver (Dirichlet, 2D)\n" + '-'*40)
+        print("Backward Euler heat solver (Dirichlet, 2D)\n" + self._horizontal_line)
 
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
@@ -212,7 +213,7 @@ class Fem2D(Fem):
         return, array : Solutions of each time step, size (m+1, n)
         """
 
-        print("Backward Euler heat solver (Neumann, 2D)\n" + '-'*40)
+        print("Backward Euler heat solver (Neumann, 2D)\n" + self._horizontal_line)
         
         # time step size
         k = T / m
@@ -260,7 +261,7 @@ class Fem2D(Fem):
         dnodes, tuple : Index of Dirichlet nodes (triangle index).
         """
         
-        print(f"Crank-Nicolson wave solver (Dirichlet, 2D)\n" + '-'*40)
+        print(f"Crank-Nicolson wave solver (Dirichlet, 2D)\n" + self._horizontal_line)
         k = T / m          # time step size
         n_p = len(self.P)  # number of nodes
         dnodes = np.array(dnodes)
@@ -311,7 +312,7 @@ class Fem2D(Fem):
         gD, func : Boundary function gD = gD(x, y)
         """
         
-        print(f"Poisson solver (Dirichlet, 2D)\n" + '-'*40)
+        print(f"Poisson solver (Dirichlet, 2D)\n" + self._horizontal_line)
         
         # get indicies of interior nodes
         int_idxs = np.ix_(self._interior_nodes, self._interior_nodes)  # (K^T, K)
@@ -422,7 +423,7 @@ class Fem1D(Fem):
         Returns m+1 xi's as an array Xi of size (m+1, n+1)
         """
 
-        print(f"Poisson solver (Dirichlet, 1D)\n" + '-'*40)
+        print(f"Poisson solver (Dirichlet, 1D)\n" + self._horizontal_line)
 
         # n+1 space points and m+1 time points
         n = len(self.X) - 1
