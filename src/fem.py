@@ -249,18 +249,22 @@ class Fem2D(Fem):
             c: float, 
             f: Callable[[float, float], float], 
             gD: Callable[[float, int], float], 
-            dnodes: tuple
+            dnodes: tuple,
+            drop_tol: float = 1e-4,
+            rtol: float = 1e-6
             ) -> NDArray:
         """
         Solve the 2-dimensional wave equation utt + c^2 uyy = f(x, y) with 0 on the boundary
         using the finite elements for space and the Crank-Nicolson method for time.
 
-        T, float      : Stopping time
-        m, int        : Number of time intervals
-        c, int        : Wave speed
-        f, func       : Function f(x: float, y: float) -> float
-        gD, func      : Boundary condition at Dirichlet boundary nodes, gD(dt: float, timestep: int) -> float.
-        dnodes, tuple : Index of Dirichlet nodes (triangle index).
+        T, float        : Stopping time
+        m, int          : Number of time intervals
+        c, int          : Wave speed
+        f, func         : Function f(x: float, y: float) -> float
+        gD, func        : Boundary condition at Dirichlet boundary nodes, gD(dt: float, timestep: int) -> float.
+        dnodes, tuple   : Index of Dirichlet nodes (triangle index).
+        drop_tol, float : Ilu tolerance.
+        rtol, float     : gmres tolerance.
         """
         
         print(f"Crank-Nicolson wave solver (Dirichlet, 2D)\n" + self._horizontal_line)
@@ -278,9 +282,13 @@ class Fem2D(Fem):
         # sparse matrix in block-form
         b = np.block([np.zeros(n_p), k * b])
         B_left = sparse.bmat([[M,          -M*k/2],
-                              [A*c**2*k/2, M     ]])
+                              [A*c**2*k/2, M     ]], format='csc')
         B_right = sparse.bmat([[M,           M*k/2],
-                               [-A*c**2*k/2, M    ]])
+                               [-A*c**2*k/2, M    ]], format='csc')
+        
+         # precondition
+        ilu = sparse.linalg.spilu(B_left, drop_tol=drop_tol)  # appoximate inverse
+        precond = sparse.linalg.LinearOperator(B_left.shape, ilu.solve)
 
         # initial conditions
         xi = np.zeros(n_p)
@@ -290,8 +298,13 @@ class Fem2D(Fem):
         # Crank-Nicolson method
         xi_record = [xi]
         for l in range(m):
-            sol = sparse.linalg.spsolve(B_left, B_right @ sol + b)
-            sol[dnodes] = gD(k, l)  # Dirichlet condition
+            # solve using gmres with precoditioner
+            sol, info = sparse.linalg.gmres(B_left, B_right @ sol + b, M=precond, rtol=rtol)
+            if info != 0:
+                raise ValueError(f"GMRES solver failed to converge at iteration {l}. Info: {info}")
+        
+            # Dirichlet condition
+            sol[dnodes] = gD(k, l)
             xi = sol[:n_p]
             xi_record.append(xi)
             
