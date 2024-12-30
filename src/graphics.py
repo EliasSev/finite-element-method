@@ -4,12 +4,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from time import time, sleep
 from numpy.typing import NDArray
+import concurrent.futures
 
 
 class MeshGraphics:
-    """
-    Mesh graphics parent class.
-    """
+    """Mesh graphics parent class."""
+
     def __init__(self) -> None:
         self._images_path = "./images/"
         self._results_path = "./results/"
@@ -127,9 +127,9 @@ class MeshGraphics2D(MeshGraphics):
         self.C = fem2D.mesh.C
         self.solution = fem2D.solution
         self.n_nodes = len(self.P)
-        self.plot_functions = {"heatmap": self._plot_2D, 'surface': self._plot_3D}
+        self.plot_functions = {"heatmap": self._heatmap_plot, 'surface': self._surface_plot}
 
-    def create_solution_video(
+    def create_solution_video_old(
             self, 
             video_name: str, 
             plot_style: str, 
@@ -150,6 +150,86 @@ class MeshGraphics2D(MeshGraphics):
 
         self._create_images(plot_style, crange, cmap)
         self._create_video(video_name, fps, video_format)
+
+    def create_solution_video(
+            self,
+            title: str,
+            video_name: str,
+            style: str,
+            crange: tuple, 
+            cmap: str = 'viridis', 
+            fps: int = 15, 
+            video_format: str = 'mp4'
+            ) -> None:
+        self._create_images(title, style, crange, cmap)
+        self._create_video(video_name, fps, video_format)
+
+    def _create_images(self, title, style, crange, cmap):
+
+        print("Creating images\n" + self._horizontal_line)
+        t0 = time()
+
+        m = len(self.solution)
+        arguments = [(
+            title,
+            self._images_path + f"img{i}.jpg",
+            self.P,
+            self.C,
+            solution_i,
+            crange,
+            cmap
+            ) for i, solution_i in enumerate(self.solution)]
+        plotting_function = self.plot_functions[style]
+
+        # context manager will wait for all processes to finish
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            # create a process for each argument
+            finished = 0
+            futures = [executor.submit(plotting_function, *args) for args in arguments]
+            for f in concurrent.futures.as_completed(futures):
+                f.result()
+                finished += 1
+                progress_bar(finished, m, end_text=f" ({time()-t0:.1f}s)")
+
+        print('\n')
+        self._n_images = len(self.solution)
+
+
+    @staticmethod
+    def _heatmap_plot(title, image_name, P, C, solution, crange, cmap):
+        x, y = P[:, 0], P[:, 1]
+        vmin, vmax = crange
+        triang = mpl.tri.Triangulation(x, y, C)
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8), constrained_layout=True)
+        heatmap_num = ax.tripcolor(triang, solution, cmap=cmap, vmin=vmin, vmax=vmax)
+        ax.set_title(title)
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.axis('equal')
+
+        # color bar
+        cbar = fig.colorbar(heatmap_num, ax=ax)
+        cbar.formatter = mpl.ticker.FormatStrFormatter('%.2f')
+        cbar.update_ticks()
+        
+        plt.savefig(image_name)
+        plt.close()
+
+    @staticmethod
+    def _surface_plot(title, image_name, P, C, solution, crange, cmap):
+        x, y = P[:, 0], P[:, 1]
+        vmin, vmax = crange
+
+        fig = plt.figure(figsize=(8, 8))
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_trisurf(x, y, solution, triangles=C, cmap=cmap, edgecolor='none', vmin=vmin, vmax=vmax)
+        ax.set_title(title)
+        ax.set_xlabel('X')
+        ax.set_ylabel('Y')
+        ax.set_zlim((c*2 for c in crange))
+
+        plt.savefig(image_name)
+        plt.close()
 
     def create_solution_image(
             self, 
@@ -184,7 +264,7 @@ class MeshGraphics2D(MeshGraphics):
 
         print(f"Image saved as: {output_image}")
 
-    def _create_images(self, plot_style: str, crange: tuple, cmap: str) -> None:
+    def _create_images_old(self, plot_style: str, crange: tuple, cmap: str) -> None:
         """
         Generate images for all time steps in self.solutions. Images used to generate a video.
 
@@ -212,7 +292,7 @@ class MeshGraphics2D(MeshGraphics):
         # define once images are created
         self._n_images = len(self.solution)         
     
-    def _plot_2D(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
+    def _plot_2D_old(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
         """
         Create a heat map of the solution on a mesh.
 
@@ -238,7 +318,7 @@ class MeshGraphics2D(MeshGraphics):
         plt.savefig(self._images_path + f"img{i}.jpg")
         plt.close()
     
-    def _plot_3D(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
+    def _plot_3D_old(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
         """
         Create a surface plot the solution on a mesh.
 
