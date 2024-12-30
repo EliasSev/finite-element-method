@@ -101,6 +101,7 @@ class MeshGraphics1D(MeshGraphics):
             progress_bar(i + 1, m, end_text=f" ({time()-t0:.1f}s)")
         print('\n')
 
+        # define once images are created
         self._n_images = len(self.solution)
 
     def _create_image(self, solution: NDArray, name: str, color: str) -> None:
@@ -111,7 +112,6 @@ class MeshGraphics1D(MeshGraphics):
         ax.plot(self.X, solution, color)
         ax.set_title("1D heat equation using backward Euler")
         ax.set_label(f"t = ")
-        #plt.legend()
         plt.savefig(self._images_path + name)
         plt.close()
     
@@ -184,45 +184,33 @@ class MeshGraphics2D(MeshGraphics):
 
         print(f"Image saved as: {output_image}")
 
-    def triangulation_plot(
-            self, 
-            show_labels: bool = False, 
-            figsize: tuple = (7, 7), 
-            marker: str = 'o'
-            ) -> None:
+    def _create_images(self, plot_style: str, crange: tuple, cmap: str) -> None:
         """
-        Create a plot of the mesh.
+        Generate images for all time steps in self.solutions. Images used to generate a video.
 
-        show_labels, bool : Label each triangle and point.
-        figsize, tuple    : Figure size used for matplotlib.
-        marker, str       : Marker style used for points.
+        plot_style, str : Plot style for images. Surface or heat.
+        crange, tuple   : Fixed value range used for coloring.
+        cmap, str       : Color map.
         """
 
-        x, y = self.P[:, 0], self.P[:, 1]
-        triang = mpl.tri.Triangulation(x, y, self.C)
+        print("Creating images\n" + self._horizontal_line)
+        t0 = time()
 
-        # plot the triangulation
-        plt.figure(figsize=figsize)
-        plt.triplot(triang, marker=marker, markersize=2)
-        plt.gca().set_aspect('equal')
-        plt.title(r"Triangulation $\mathcal{K}$", size=15)
+        available_styles = self.plot_functions.keys()
+        if plot_style not in available_styles:
+            raise ValueError(f"Unknown plotting style: \"{plot_style}\". Available styles: {available_styles}")
 
-        if show_labels:
-            # node labels
-            for i, (xi, yi) in enumerate(zip(x, y)):
-                plt.text(xi, yi, f'$N_{{{i}}}$',
-                        fontsize=12,
-                        ha = 'left',
-                        va = 'bottom',
-                        c = 'orange')
+        m = len(self.solution)
+        plot_func = self.plot_functions[plot_style]
         
-            # triangle labels
-            for i, triangle in enumerate(self.C):
-                plt.text(x[triangle].mean(), y[triangle].mean(), f'$K_{{i}}$',
-                         fontsize = 12,
-                         ha = 'center',
-                         va = 'center',
-                         color = 'blue')           
+        for i, solution_i in enumerate(self.solution):
+            self._handle_mpl_bug(plot_func, solution_i, crange, i, cmap)
+
+            progress_bar(i + 1, m, end_text=f" ({time()-t0:.1f}s)")
+        print('\n')
+
+        # define once images are created
+        self._n_images = len(self.solution)         
     
     def _plot_2D(self, solution: NDArray, crange: tuple, i: int, cmap: str) -> None:
         """
@@ -275,55 +263,67 @@ class MeshGraphics2D(MeshGraphics):
 
         plt.savefig(self._images_path + f"img{i}.jpg")
         plt.close()
-    
-    def _create_images(self, plot_style: str, crange: tuple, cmap: str) -> None:
+
+    @staticmethod
+    def _handle_mpl_bug(plot_func, *args, max_attempts=15):
         """
-        Generate images for all time steps in self.solutions. Images used to generate a video.
-
-        plot_style, str : Plot style for images. Surface or heat.
-        crange, tuple   : Fixed value range used for coloring.
-        cmap, str       : Color map.
+        Try to create image 'max_attempts' times in case of matplotlib bug
+        ValueError: PyCapsule_New called with null pointer, which comes from
+        GetForegroundWindow() returning NULL. This can be avioded by waiting a bit (~0.1s) 
+        and retrying (bug fixed in matplotlib 3.10, https://github.com/matplotlib/matplotlib/pull/28269)
         """
 
-        print("Creating images\n" + self._horizontal_line)
-        t0 = time()
-
-        available_styles = self.plot_functions.keys()
-        if plot_style not in available_styles:
-            raise ValueError(f"Unknown plotting style: \"{plot_style}\". Available styles: {available_styles}")
-
-        m = len(self.solution)
-        plot_func = self.plot_functions[plot_style]
-        
-        for i, solution_i in enumerate(self.solution):
-            # try to create image 'max_attempts' times in case of matplotlib bug
-            # ValueError: PyCapsule_New called with null pointer, which comes from
-            # GetForegroundWindow() returning NULL. This can be avioded by waiting a bit (~0.1s) 
-            # and retrying (bug fixed in matplotlib 3.10, https://github.com/matplotlib/matplotlib/pull/28269)
-            attempts = 0
-            max_attempts = 15
-            image_created = False
-            while not image_created:
-                try:
-                    plot_func(solution_i, crange, i, cmap)
-                    image_created = True
-                except Exception as e:
-                    if isinstance(e, ValueError) and str(e) == "PyCapsule_New called with null pointer":
-                        attempts += 1
-                        if attempts >= max_attempts:
-                            print(f"Creating image {i} failed {max_attempts} time(s):")
-                            raise e
-                        print(f"Creating image {i} failed ({str(e)}). Retrying.")
-                        sleep(0.1)
-                    else:
-                        # any other exception
+        attempts = 0
+        image_created = False
+        while not image_created:
+            try:
+                plot_func(*args)
+                image_created = True
+            except Exception as e:
+                if isinstance(e, ValueError) and str(e) == "PyCapsule_New called with null pointer":
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        print(f"Creating image failed {max_attempts} time(s):")
                         raise e
-                    
-            progress_bar(i + 1, m, end_text=f" ({time()-t0:.1f}s)")
-        print('\n')
+                    print(f"Creating image failed ({str(e)}). Retrying.")
+                    sleep(0.1)
+                else:
+                    # any other exception
+                    raise e
+    
+    def triangulation_plot(
+            self, 
+            show_labels: bool = False, 
+            figsize: tuple = (7, 7), 
+            marker: str = 'o'
+            ) -> None:
+        """
+        Create a plot of the mesh.
 
-        # give value once all images are created
-        self._n_images = len(self.solution)
+        show_labels, bool : Label each triangle and point.
+        figsize, tuple    : Figure size used for matplotlib.
+        marker, str       : Marker style used for points.
+        """
+
+        x, y = self.P[:, 0], self.P[:, 1]
+        triang = mpl.tri.Triangulation(x, y, self.C)
+
+        # plot the triangulation
+        plt.figure(figsize=figsize)
+        plt.triplot(triang, marker=marker, markersize=2)
+        plt.gca().set_aspect('equal')
+        plt.title(r"Triangulation $\mathcal{K}$", size=15)
+
+        if show_labels:
+            # node labels
+            for i, (xi, yi) in enumerate(zip(x, y)):
+                plt.text(xi, yi, f'$N_{{{i}}}$', fontsize=12,
+                        ha = 'left', va = 'bottom', c = 'orange')
+        
+            # triangle labels
+            for i, triangle in enumerate(self.C):
+                plt.text(x[triangle].mean(), y[triangle].mean(), f'$K_{{i}}$',
+                         fontsize = 12, ha = 'center', va = 'center', color = 'blue') 
 
 
 def progress_bar(
