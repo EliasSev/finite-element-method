@@ -1,7 +1,8 @@
+import meshio
 import numpy as np
 import scipy as sp
-import meshio
 from collections import Counter
+from numpy.typing import NDArray
 
 class Mesh:
     def __init__(self) -> None:
@@ -15,35 +16,30 @@ class Mesh:
         self._P = None  # Point matrix
         self._C = None  # Connectivity matrix
         self._no_mesh_message = "The mesh is not defined yet. Read in a mesh or define a mesh"
-    
 
     @property
-    def P(self):
+    def P(self) -> NDArray:
         if self._P is None:
             raise AttributeError(self._no_mesh_message)
         return self._P
-        
 
     @property
-    def C(self):
+    def C(self) -> NDArray:
         if self._C is None:
             raise AttributeError(self._no_mesh_message)
         return self._C
 
-
     @property
-    def interior_nodes(self):
+    def interior_nodes(self) -> NDArray:
         if self._boundary_nodes is None:
             self._find_boundary_nodes()
         return self._interior_nodes
 
-
     @property
-    def boundary_nodes(self):
+    def boundary_nodes(self) -> NDArray:
         if self._boundary_nodes is None:
             self._find_boundary_nodes()
         return self._boundary_nodes
-    
 
     def _find_boundary_nodes(self) -> None:
         """
@@ -73,12 +69,13 @@ class Mesh:
         self._boundary_nodes = edge_nodes
         self._interior_nodes = int_nodes
 
-
     def square_mesh(self, n: int, x_range: tuple, y_range: tuple) -> tuple:
         """
         Create an n times n rectangular mesh.
 
         n, int : The number of nodes of the side of the rectangle.
+        x_range, tuple : Width (left, right).
+        y_range, tuple : Height (bottom, top).
         """
         
         x_start, x_end = x_range
@@ -92,7 +89,6 @@ class Mesh:
 
         self._P, self._C = P, C
         return P, C
-        
     
     def read_msh(self, path: str) -> tuple:
         """
