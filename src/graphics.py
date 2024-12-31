@@ -161,10 +161,30 @@ class MeshGraphics2D(MeshGraphics):
             fps: int = 15, 
             video_format: str = 'mp4'
             ) -> None:
+        """
+        Generate a video of the solution.
+
+        title, str        : Title used in the images.
+        video_name, str   : Name of video.
+        style, str        : Plotting style for images. Surface or heat.
+        crange, tuple     : Fixed value range used for coloring.
+        cmap, str         : Color map.
+        fps, int          : Frames per seconds used for video.
+        video_format, str : Video format. 'mp4' or 'avi'.
+        """
+
         self._create_images(title, style, crange, cmap)
         self._create_video(video_name, fps, video_format)
 
-    def _create_images(self, title, style, crange, cmap):
+    def _create_images(self, title, style, crange, cmap) -> None:
+        """
+        Generate images for all time steps in self.solutions. Images used to generate a video.
+
+        title, str    : Title used in the images.
+        style, str    : Plotting style for images. Surface or heat.
+        crange, tuple : Fixed value range used for coloring.
+        cmap, str     : Color map.
+        """
 
         print("Creating images\n" + self._horizontal_line)
         t0 = time()
@@ -196,7 +216,26 @@ class MeshGraphics2D(MeshGraphics):
 
 
     @staticmethod
-    def _heatmap_plot(title, image_name, P, C, solution, crange, cmap):
+    def _heatmap_plot(
+        title: str, 
+        image_name: str, 
+        P: NDArray, 
+        C: NDArray, 
+        solution: NDArray, 
+        crange: str, 
+        cmap: str
+        ) -> None:
+        """
+        Create a heat map of the given solution and mesh.
+        
+        title, str         : Title used for the plot.
+        image_name, str    : Path and name of image.
+        P, NDArray         : Point matrix.
+        C, NDArray         : Connectivity matrix (triangles).
+        solution, np.array : Finite element solution.
+        crange, tuple      : Fixed value range used for coloring.
+        """
+
         x, y = P[:, 0], P[:, 1]
         vmin, vmax = crange
         triang = mpl.tri.Triangulation(x, y, C)
@@ -216,17 +255,35 @@ class MeshGraphics2D(MeshGraphics):
         plt.close()
 
     @staticmethod
-    def _surface_plot(title, image_name, P, C, solution, crange, cmap):
+    def _surface_plot(
+        title: str, 
+        image_name: str, 
+        P: NDArray, 
+        C: NDArray, 
+        solution: NDArray, 
+        crange: str, 
+        cmap: str
+        ) -> None:
+        """
+        Create a heat map of the given solution and mesh.
+        
+        title, str         : Title used for the plot.
+        image_name, str    : Path and name of image.
+        P, NDArray         : Point matrix.
+        C, NDArray         : Connectivity matrix (triangles).
+        solution, np.array : Finite element solution.
+        crange, tuple      : Fixed value range used for coloring.
+        """
+
         x, y = P[:, 0], P[:, 1]
         vmin, vmax = crange
-
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_trisurf(x, y, solution, triangles=C, cmap=cmap, edgecolor='none', vmin=vmin, vmax=vmax)
         ax.set_title(title)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
-        ax.set_zlim((c*2 for c in crange))
+        ax.set_zlim((c*4 for c in crange))
 
         plt.savefig(image_name)
         plt.close()
