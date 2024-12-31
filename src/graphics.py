@@ -173,6 +173,9 @@ class MeshGraphics2D(MeshGraphics):
         video_format, str : Video format. 'mp4' or 'avi'.
         """
 
+        if style not in self.plot_functions.keys():
+            raise ValueError(f"Unknown plotting style: \"{style}\". Available styles: {self.plot_functions.keys()}")
+
         self._create_images(title, style, crange, cmap)
         self._create_video(video_name, fps, video_format)
 
