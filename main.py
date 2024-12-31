@@ -17,5 +17,3 @@ if __name__ == '__main__':
     wave2D_Dirichlet_example()
     #poisson2D_Dirichlet_example()
     #heat1D_Dirichlet_example()
-
-    
