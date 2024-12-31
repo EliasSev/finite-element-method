@@ -166,7 +166,7 @@ class MeshGraphics1D(MeshGraphics):
             ) -> None:
         fig, ax = plt.subplots(figsize=figsize)
         ax.set_xlim(self.X[0], self.X[-1])
-        ax.set_ylim(np.min(solution), np.max(solution))
+        ax.set_ylim(self.ylim[0], self.ylim[1])
         ax.plot(self.X, solution, color)
         ax.set_title(title)
         plt.savefig(image_name)
