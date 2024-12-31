@@ -129,28 +129,6 @@ class MeshGraphics2D(MeshGraphics):
         self.n_nodes = len(self.P)
         self.plot_functions = {"heatmap": self._heatmap_plot, 'surface': self._surface_plot}
 
-    def create_solution_video_old(
-            self, 
-            video_name: str, 
-            plot_style: str, 
-            crange: tuple, 
-            cmap: str='viridis', 
-            fps: int=15, 
-            video_format: str='mp4'
-            ) -> None:
-        """
-        Create a video using the images in /images.
-
-        vid_name, str     : Name of video.
-        plot_style, str   : Plot style for images. Surface or heat.
-        fps, int          : Frames per seconds used for video.
-        video_format, str : Video format. 'mp4' or 'avi'.
-        crange, tuple     : Fixed value range used for coloring.
-        """
-
-        self._create_images(plot_style, crange, cmap)
-        self._create_video(video_name, fps, video_format)
-
     def create_solution_video(
             self,
             title: str,
