@@ -7,7 +7,7 @@ def wave2D_Dirichlet_example():
     # create mesh
     mesh = Mesh()
     mesh.square_mesh(
-        n = 150,           # n by n grid
+        n = 75,           # n by n grid
         x_range = (0, 1), # x-limit
         y_range = (0, 1)  # y-limit
     )
