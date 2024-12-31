@@ -286,7 +286,7 @@ class MeshGraphics2D(MeshGraphics):
         ax.set_title(title)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
-        ax.set_zlim((c*4 for c in crange))
+        ax.set_zlim((c*2 for c in crange))
 
         plt.savefig(image_name)
         plt.close()
