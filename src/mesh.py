@@ -1,6 +1,8 @@
 import meshio
 import numpy as np
 import scipy as sp
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 from collections import Counter
 from numpy.typing import NDArray
 
@@ -107,3 +109,41 @@ class Mesh:
         
         self._P, self._C = P, C
         return P, C
+
+    def mesh_plot(
+            self, 
+            path: str = './results/MeshPlot.jpg',
+            show_labels: bool = False, 
+            figsize: tuple = (7, 7), 
+            marker: str = 'o'
+            ) -> None:
+        """
+        Create a plot of the mesh.
+
+        show_labels, bool : Label each triangle and point.
+        figsize, tuple    : Figure size used for matplotlib.
+        marker, str       : Marker style used for points.
+        """
+
+        x, y = self.P[:, 0], self.P[:, 1]
+        triang = mpl.tri.Triangulation(x, y, self.C)
+
+        # plot the triangulation
+        plt.figure(figsize=figsize)
+        plt.triplot(triang, marker=marker, markersize=2)
+        plt.gca().set_aspect('equal')
+        plt.title(f"Mesh plot ({len(self.P)} nodes, {len(self.C)} triangles)", size=15)
+
+        if show_labels:
+            # node labels
+            for i, (xi, yi) in enumerate(zip(x, y)):
+                plt.text(xi, yi, f'$N_{{{i}}}$', fontsize=12,
+                        ha = 'left', va = 'bottom', c = 'orange')
+        
+            # triangle labels
+            for i, triangle in enumerate(self.C):
+                plt.text(x[triangle].mean(), y[triangle].mean(), f'$K_{{i}}$',
+                         fontsize = 12, ha = 'center', va = 'center', color = 'blue') 
+        
+        plt.savefig(path)
+        plt.close()
