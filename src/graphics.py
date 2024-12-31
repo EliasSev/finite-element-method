@@ -42,7 +42,7 @@ class MeshGraphics:
             raise ValueError(f"Invalid video format: {video_format}. Valid formats: {', '.join(fformat.keys())}")
 
         # create names
-        images = [f"img{i}.jpg" for i in range(self._n_images)]
+        images = [f'img{i}.jpg' for i in range(self._n_images)]
         output_video = self._results_path + video_name + '.' + video_format
 
         # define video dimension
@@ -76,7 +76,14 @@ class MeshGraphics1D(MeshGraphics):
         self.xlim = (self.X[0], self.X[-1])
         self.ylim = (np.min(self.solution), np.max(self.solution))
 
-    def create_solution_video(self, video_name: str, color: str, fps: int=15, video_format: str='mp4') -> None:
+    def create_solution_video(
+            self, 
+            video_name: str, 
+            title: str, 
+            color: str, 
+            fps: int = 15, 
+            video_format: str = 'mp4'
+            ) -> None:
         """
         Create a video using the images in /images.
 
@@ -85,34 +92,58 @@ class MeshGraphics1D(MeshGraphics):
         video_format, str : Video format. 'mp4' or 'avi'.
         """
 
-        self._create_images(color)
+        self._create_images(title, color)
         self._create_video(video_name, fps, video_format)
 
-    def _create_images(self, color: str) -> None:
+    def _create_images(self, title: str, color: str) -> None:
+        """
+        Generate images for all time steps in self.solutions. Images used to generate a video.
+
+        title, str : Title used in the images.
+        color, str : Color of line.
+        """
 
         print("Creating images\n" + self._horizontal_line)
         t0 = time()
 
         m = len(self.solution)
-        for i, solution_i in enumerate(self.solution):
-            name = f"/img{i}.jpg"
-            self._create_image(solution_i, name, color)
+        arguments = [(
+            title,
+            self._images_path + f"img{i}.jpg",
+            self.X,
+            solution_i,
+            color,
+            self.figsize
+            ) for i, solution_i in enumerate(self.solution)]
 
-            progress_bar(i + 1, m, end_text=f" ({time()-t0:.1f}s)")
+        # context manager will wait for all processes to finish
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            # create a process for each argument
+            finished = 0
+            futures = [executor.submit(self._create_image, *args) for args in arguments]
+            for f in concurrent.futures.as_completed(futures):
+                f.result()
+                finished += 1
+                progress_bar(finished, m, end_text=f" ({time()-t0:.1f}s)")
+
         print('\n')
-
-        # define once images are created
         self._n_images = len(self.solution)
 
-    def _create_image(self, solution: NDArray, name: str, color: str) -> None:
-        # figure setup
-        fig, ax = plt.subplots(figsize=self.figsize)
-        ax.set_xlim(self.xlim[0], self.xlim[1])
-        ax.set_ylim(self.ylim[0], self.ylim[1])
-        ax.plot(self.X, solution, color)
-        ax.set_title("1D heat equation using backward Euler")
-        ax.set_label(f"t = ")
-        plt.savefig(self._images_path + name)
+    @staticmethod
+    def _create_image(
+            title: str, 
+            image_name: str, 
+            X: NDArray, 
+            solution: NDArray, 
+            color: str,
+            figsize: tuple
+            ) -> None:
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.set_xlim(X[0], X[-1])
+        ax.set_ylim(np.min(solution), np.max(solution))
+        ax.plot(X, solution, color)
+        ax.set_title(title)
+        plt.savefig(image_name)
         plt.close()
     
 
@@ -157,7 +188,7 @@ class MeshGraphics2D(MeshGraphics):
         self._create_images(title, style, crange, cmap)
         self._create_video(video_name, fps, video_format)
 
-    def _create_images(self, title, style, crange, cmap) -> None:
+    def _create_images(self, title: str, style: str, crange: tuple, cmap: str) -> None:
         """
         Generate images for all time steps in self.solutions. Images used to generate a video.
 
@@ -194,7 +225,6 @@ class MeshGraphics2D(MeshGraphics):
 
         print('\n')
         self._n_images = len(self.solution)
-
 
     @staticmethod
     def _heatmap_plot(
@@ -328,40 +358,6 @@ class MeshGraphics2D(MeshGraphics):
                 else:
                     # any other exception
                     raise e
-    
-    def triangulation_plot(
-            self, 
-            show_labels: bool = False, 
-            figsize: tuple = (7, 7), 
-            marker: str = 'o'
-            ) -> None:
-        """
-        Create a plot of the mesh.
-
-        show_labels, bool : Label each triangle and point.
-        figsize, tuple    : Figure size used for matplotlib.
-        marker, str       : Marker style used for points.
-        """
-
-        x, y = self.P[:, 0], self.P[:, 1]
-        triang = mpl.tri.Triangulation(x, y, self.C)
-
-        # plot the triangulation
-        plt.figure(figsize=figsize)
-        plt.triplot(triang, marker=marker, markersize=2)
-        plt.gca().set_aspect('equal')
-        plt.title(r"Triangulation $\mathcal{K}$", size=15)
-
-        if show_labels:
-            # node labels
-            for i, (xi, yi) in enumerate(zip(x, y)):
-                plt.text(xi, yi, f'$N_{{{i}}}$', fontsize=12,
-                        ha = 'left', va = 'bottom', c = 'orange')
-        
-            # triangle labels
-            for i, triangle in enumerate(self.C):
-                plt.text(x[triangle].mean(), y[triangle].mean(), f'$K_{{i}}$',
-                         fontsize = 12, ha = 'center', va = 'center', color = 'blue') 
 
 
 def progress_bar(
