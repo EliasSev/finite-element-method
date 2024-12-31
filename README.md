@@ -41,8 +41,9 @@ Create a video or image of the solution using the `MeshGraphics1D` or `MeshGraph
 graphics = MeshGraphics2D(fem)
 # generate video in case of time dependent problem
 graphics.create_solution_video(
+    title      = 'Heat equation FEM solution'
     video_name = 'HeatDirichletExample', 
-    plot_style = 'surface', 
+    style      = 'surface', 
     crange     = (0, 1), 
     cmap       = 'coolwarm', 
     fps        = 20
