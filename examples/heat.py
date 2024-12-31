@@ -49,7 +49,7 @@ def heat2D_Dirichlet_example():
     graphics.create_solution_video(
         title      = 'Heat equation FEM solution',
         video_name = 'HeatDirichletExample', 
-        style = 'surface', 
+        style      = 'surface', 
         crange     = (0, 1), 
         cmap       = 'coolwarm', 
         fps        = 20
@@ -71,6 +71,7 @@ def heat1D_Dirichlet_example():
     # generate video
     graphics = MeshGraphics1D(fem1D)
     graphics.create_solution_video(
+        title = 'Heat equation FEM solution',
         video_name = 'HeatDirichletExample1D',
         color = 'red',
         fps = 15
