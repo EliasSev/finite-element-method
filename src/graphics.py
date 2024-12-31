@@ -5,6 +5,39 @@ import matplotlib.pyplot as plt
 from time import time, sleep
 from numpy.typing import NDArray
 import concurrent.futures
+from functools import wraps
+
+
+def handle_mpl_bug(func):
+    """
+    Wrapper function to handle the matplotlib 3.9.0 'PyCapsule_New called with null pointer' bug.
+
+    Try to create image 'max_attempts' times in case of matplotlib bug
+    ValueError: PyCapsule_New called with null pointer, which comes from
+    GetForegroundWindow() returning NULL. This can be avioded by waiting a bit (~0.1s) 
+    and retrying (bug fixed in matplotlib 3.10, https://github.com/matplotlib/matplotlib/pull/28269)
+    """
+
+    def wrapper(*args, **kwargs):
+        attempts = 0
+        max_attempts = 15
+        image_created = False
+        while not image_created:
+            try:
+                func(*args, **kwargs)  # try to run function
+                image_created = True
+            except Exception as e:
+                if isinstance(e, ValueError) and str(e) == "PyCapsule_New called with null pointer":
+                    attempts += 1
+                    if attempts >= max_attempts:
+                        print(f"Creating image failed {max_attempts} time(s):")
+                        raise e
+                    print(f"Creating image failed ({str(e)}). Retrying.")
+                    sleep(0.1)
+                else:
+                    raise e  # any other exception
+                
+    return wrapper
 
 
 class MeshGraphics:
@@ -107,14 +140,8 @@ class MeshGraphics1D(MeshGraphics):
         t0 = time()
 
         m = len(self.solution)
-        arguments = [(
-            title,
-            self._images_path + f"img{i}.jpg",
-            self.X,
-            solution_i,
-            color,
-            self.figsize
-            ) for i, solution_i in enumerate(self.solution)]
+        arguments = [(title, self._images_path + f"img{i}.jpg", solution_i, color,
+                      self.figsize) for i, solution_i in enumerate(self.solution)]
 
         # context manager will wait for all processes to finish
         with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -129,19 +156,18 @@ class MeshGraphics1D(MeshGraphics):
         print('\n')
         self._n_images = len(self.solution)
 
-    @staticmethod
     def _create_image(
+            self,
             title: str, 
             image_name: str, 
-            X: NDArray, 
             solution: NDArray, 
             color: str,
             figsize: tuple
             ) -> None:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.set_xlim(X[0], X[-1])
+        ax.set_xlim(self.X[0], self.X[-1])
         ax.set_ylim(np.min(solution), np.max(solution))
-        ax.plot(X, solution, color)
+        ax.plot(self.X, solution, color)
         ax.set_title(title)
         plt.savefig(image_name)
         plt.close()
@@ -202,15 +228,8 @@ class MeshGraphics2D(MeshGraphics):
         t0 = time()
 
         m = len(self.solution)
-        arguments = [(
-            title,
-            self._images_path + f"img{i}.jpg",
-            self.P,
-            self.C,
-            solution_i,
-            crange,
-            cmap
-            ) for i, solution_i in enumerate(self.solution)]
+        arguments = [(title, self._images_path + f"img{i}.jpg", solution_i,
+                      crange, cmap) for i, solution_i in enumerate(self.solution)]
         plotting_function = self.plot_functions[style]
 
         # context manager will wait for all processes to finish
@@ -226,14 +245,11 @@ class MeshGraphics2D(MeshGraphics):
         print('\n')
         self._n_images = len(self.solution)
 
-    @staticmethod
-    def _heatmap_plot(
+    def _heatmap_plot(self,
         title: str, 
         image_name: str, 
-        P: NDArray, 
-        C: NDArray, 
         solution: NDArray, 
-        crange: str, 
+        crange: tuple, 
         cmap: str
         ) -> None:
         """
@@ -241,15 +257,13 @@ class MeshGraphics2D(MeshGraphics):
         
         title, str         : Title used for the plot.
         image_name, str    : Path and name of image.
-        P, NDArray         : Point matrix.
-        C, NDArray         : Connectivity matrix (triangles).
         solution, np.array : Finite element solution.
         crange, tuple      : Fixed value range used for coloring.
         """
 
-        x, y = P[:, 0], P[:, 1]
+        x, y = self.P[:, 0], self.P[:, 1]
+        triang = mpl.tri.Triangulation(x, y, self.C)
         vmin, vmax = crange
-        triang = mpl.tri.Triangulation(x, y, C)
         fig, ax = plt.subplots(1, 1, figsize=(8, 8), constrained_layout=True)
         heatmap_num = ax.tripcolor(triang, solution, cmap=cmap, vmin=vmin, vmax=vmax)
         ax.set_title(title)
@@ -265,12 +279,10 @@ class MeshGraphics2D(MeshGraphics):
         plt.savefig(image_name)
         plt.close()
 
-    @staticmethod
     def _surface_plot(
+        self,
         title: str, 
         image_name: str, 
-        P: NDArray, 
-        C: NDArray, 
         solution: NDArray, 
         crange: str, 
         cmap: str
@@ -280,17 +292,15 @@ class MeshGraphics2D(MeshGraphics):
         
         title, str         : Title used for the plot.
         image_name, str    : Path and name of image.
-        P, NDArray         : Point matrix.
-        C, NDArray         : Connectivity matrix (triangles).
         solution, np.array : Finite element solution.
         crange, tuple      : Fixed value range used for coloring.
         """
 
-        x, y = P[:, 0], P[:, 1]
+        x, y = self.P[:, 0], self.P[:, 1]
         vmin, vmax = crange
         fig = plt.figure(figsize=(8, 8))
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_trisurf(x, y, solution, triangles=C, cmap=cmap, edgecolor='none', vmin=vmin, vmax=vmax)
+        ax.plot_trisurf(x, y, solution, triangles=self.C, cmap=cmap, edgecolor='none', vmin=vmin, vmax=vmax)
         ax.set_title(title)
         ax.set_xlabel('X')
         ax.set_ylabel('Y')
@@ -332,33 +342,6 @@ class MeshGraphics2D(MeshGraphics):
 
         print(f"Image saved as: {output_image}")
 
-    @staticmethod
-    def _handle_mpl_bug(plot_func, *args, max_attempts=15):
-        """
-        Try to create image 'max_attempts' times in case of matplotlib bug
-        ValueError: PyCapsule_New called with null pointer, which comes from
-        GetForegroundWindow() returning NULL. This can be avioded by waiting a bit (~0.1s) 
-        and retrying (bug fixed in matplotlib 3.10, https://github.com/matplotlib/matplotlib/pull/28269)
-        """
-
-        attempts = 0
-        image_created = False
-        while not image_created:
-            try:
-                plot_func(*args)
-                image_created = True
-            except Exception as e:
-                if isinstance(e, ValueError) and str(e) == "PyCapsule_New called with null pointer":
-                    attempts += 1
-                    if attempts >= max_attempts:
-                        print(f"Creating image failed {max_attempts} time(s):")
-                        raise e
-                    print(f"Creating image failed ({str(e)}). Retrying.")
-                    sleep(0.1)
-                else:
-                    # any other exception
-                    raise e
-
 
 def progress_bar(
         step: int, 
@@ -378,3 +361,4 @@ def progress_bar(
     filled = int(bar_length * step / total_steps)
     text = f"[{filled * '#' :<{bar_length}}] {step}/{total_steps}"
     print(text + end_text, end='\r')
+
