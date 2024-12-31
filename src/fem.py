@@ -441,7 +441,7 @@ class Fem1D(Fem):
         Returns m+1 xi's as an array Xi of size (m+1, n+1)
         """
 
-        print(f"Poisson solver (Dirichlet, 1D)\n" + self._horizontal_line)
+        print(f"Heat solver (Dirichlet, 1D)\n" + self._horizontal_line)
         t0 = time()
 
         # n+1 space points and m+1 time points
